@@ -23,17 +23,17 @@ jobs:
       - name: Setup environment
         run: git config --global safe.directory '*'
 
-      - name: Build & Packag
+      - name: Build & Package
         id: build
         run: |
           make
-          mkdir -p ../../nesDS/
-          cp tuna-vids.nds ../../nesDS/
+          mkdir -p nesDS
+          cp tuna-vids.nds nesDS/
 
       - name: Publish build to GH Actions
         uses: actions/upload-artifact@v4
         with:
-          path: nesDS
+          path: nesDS/
           name: build
 
       - name: Release
