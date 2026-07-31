@@ -25,7 +25,6 @@ jobs:
 
       - name: Build & Packag
         id: build
-        working-directory: platform/ds
         run: |
           make
           mkdir -p ../../nesDS/
