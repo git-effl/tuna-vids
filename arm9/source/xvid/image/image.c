@@ -1,23 +1,23 @@
 /**************************************************************************
  *
- *  XVID MPEG-4 VIDEO CODEC
- *  - Image management functions -
+ *   XVID MPEG-4 VIDEO CODEC
+ *   - Image management functions -
  *
- *  Copyright(C) 2001-2004 Peter Ross <pross@xvid.org>
+ *   Copyright(C) 2001-2004 Peter Ross <pross@xvid.org>
  *
- *  This program is free software ; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation ; either version 2 of the License, or
- *  (at your option) any later version.
+ *   This program is free software ; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation ; either version 2 of the License, or
+ *   (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY ; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY ; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program ; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program ; if not, write to the Free Software
+ *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
  *
  * $Id: image.c,v 1.32 2005/09/09 12:18:10 suxen_drol Exp $
  *
@@ -433,25 +433,10 @@ image_output(IMAGE * image,
 	const int edged_width2 = edged_width/2;
 	int height2 = height/2;
 
-/*
-	if (interlacing)
-		image_printf(image, edged_width, height, 5,100, "[i]=%i,%i",width,height);
-	image_dump_yuvpgm(image, edged_width, width, height, "\\decode.pgm");
-*/
-
 	switch (csp & ~XVID_CSP_VFLIP) {
 	case XVID_CSP_RGB555:
-/*		safe_packed_conv(
-			dst[0], dst_stride[0], image->y, image->u, image->v,
-			edged_width, edged_width2, width, height, (csp & XVID_CSP_VFLIP),
-			interlacing?yv12_to_rgb555i  :yv12_to_rgb555,
-			interlacing?yv12_to_rgb555i_c:yv12_to_rgb555_c, 2);
-*/
-//		yv12_to_rgb555_c (dst[0], image->y, image->u, image->v, height);
 		yv12_to_rgb555_asm (dst[0], image->y, image->u, image->v, height);
 		return 0;
-
-
 
 	case XVID_CSP_I420: /* YCbCr == YUV == internal colorspace for MPEG */
 		yv12_to_yv12(dst[0], dst[0] + dst_stride[0]*height, dst[0] + dst_stride[0]*height + (dst_stride[0]/2)*height2,
@@ -534,6 +519,19 @@ float sse_to_PSNR(long sse, int pixels)
 
 }
 
+static inline long sse8_8bit(uint8_t *orig, uint8_t *recon, uint16_t stride)
+{
+	long sse = 0;
+	int y, x;
+	for (y = 0; y < 8; y++) {
+		for (x = 0; x < 8; x++) {
+			int diff = orig[x + y * stride] - recon[x + y * stride];
+			sse += diff * diff;
+		}
+	}
+	return sse;
+}
+
 long plane_sse(uint8_t *orig,
 			   uint8_t *recon,
 			   uint16_t stride,
@@ -594,57 +592,6 @@ long plane_sse(uint8_t *orig,
 	return (sse);
 }
 
-#if 0
-
-#include <stdio.h>
-#include <string.h>
-
-int image_dump_pgm(uint8_t * bmp, uint32_t width, uint32_t height, char * filename)
-{
-	FILE * f;
-	char hdr[1024];
-
-	f = fopen(filename, "wb");
-	if ( f == NULL)
-	{
-		return -1;
-	}
-	sprintf(hdr, "P5\n#xvid\n%i %i\n255\n", width, height);
-	fwrite(hdr, strlen(hdr), 1, f);
-	fwrite(bmp, width, height, f);
-	fclose(f);
-
-	return 0;
-}
-
-
-/* dump image+edges to yuv pgm files */
-
-int image_dump(IMAGE * image, uint32_t edged_width, uint32_t edged_height, char * path, int number)
-{
-	char filename[1024];
-
-	sprintf(filename, "%s_%i_%c.pgm", path, number, 'y');
-	image_dump_pgm(
-		image->y - (EDGE_SIZE * edged_width + EDGE_SIZE),
-		edged_width, edged_height, filename);
-
-	sprintf(filename, "%s_%i_%c.pgm", path, number, 'u');
-	image_dump_pgm(
-		image->u - (EDGE_SIZE2 * edged_width / 2 + EDGE_SIZE2),
-		edged_width / 2, edged_height / 2, filename);
-
-	sprintf(filename, "%s_%i_%c.pgm", path, number, 'v');
-	image_dump_pgm(
-		image->v - (EDGE_SIZE2 * edged_width / 2 + EDGE_SIZE2),
-		edged_width / 2, edged_height / 2, filename);
-
-	return 0;
-}
-#endif
-
-
-
 /* dump image to yuvpgm file */
 
 #include <stdio.h>
@@ -667,7 +614,7 @@ image_dump_yuvpgm(const IMAGE * image,
 	if (f == NULL) {
 		return -1;
 	}
-	sprintf(hdr, "P5\n#xvid\n%i %i\n255\n", width, (3 * height) / 2);
+	sprintf(hdr, "P5\n#xvid\n%u %lu\n255\n", width, (unsigned long)((3 * height) / 2));
 	fwrite(hdr, strlen(hdr), 1, f);
 
 	bmp1 = image->y;
