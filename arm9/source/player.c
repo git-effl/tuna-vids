@@ -382,9 +382,11 @@ int play_movie(FILE* aviFile)
         }
     };
 
-    // Restore console so we can print text again.
+    vidBuf_StopVideo();
+    mp3PlayerStop(true);
+    
     consoleSetup();
-    iprintf("Video stopped\n");
+    iprintf("Video Playback has just ended\n");
 
     /*****************************************************************************
      *     Flush decoder buffers
@@ -415,5 +417,4 @@ int play_movie(FILE* aviFile)
     iprintf("Finished playback\n");
 
     return 0;
-
 }
